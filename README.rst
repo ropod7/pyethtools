@@ -38,7 +38,9 @@ Example of usage:
             "from" : account,
             "to"   : contractAddress,
             "gas"  : 10**6,
-            # encoding additional data:
+            # NB: On giving a list of parameters user will check the additional
+            # sequence to give them as in contract constructor or function call
+            # to encode equal sequence, because 'getData' is not a compiler:
             "data" : ht.getData([2**16, ['0x972', 123], "0123456789", "Hello, world!"], data=txData),
 
             # ht.getData returns:
