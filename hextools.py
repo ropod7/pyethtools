@@ -23,11 +23,13 @@ def _checkForHex(data):
         return False
 
 def intToPaddedHex(data):
+    """Returns padded hex of int."""
     assert isinstance(data, int), "Given data not an int type"
     hexdata = hex(data)[2:]
     return _push(hexdata)
 
 def floatToPaddedHex(data):
+    """Returns padded hex of float."""
     assert isinstance(data, float), "Given data not a float type"
     integer = hex(int(data))[2:]
     fraction = format(data%int(data))
@@ -36,6 +38,7 @@ def floatToPaddedHex(data):
     return _push(hexed, floated=True)
 
 def strToPaddedHex(data):
+    """Returns padded hex of string."""
     assert isinstance(data, str) or isinstance(data, unicode), "Given data not a str or unicode type"
     hexed = strToHex(data)
     chlen = len(hexed[2:])
@@ -51,6 +54,7 @@ def strToPaddedHex(data):
     return hexed + "0" * tail
 
 def hexToPaddedHex(data):
+    """Returns padded hex number."""
     assert _checkForHex(data), "Given data not hex, try 'strToPaddedHex'"
     if len(data) is 66:
         return data
@@ -91,12 +95,13 @@ def encodeData(data):
         raise ValueError("Unsupported data format")
 
 def getMethodID(self, signature):
+    """Returns 4 bytes of sha3 function signature as function ID to give in 'getData'"""
     assert _checkForHex(signature), "Given signature not in hex format"
     return signature[:10]
 
 def getData(params, data=None):
-    """Returns fully encoded additional parameters that given on contract creation OR
-    function calling.
+    """Returns fully encoded data with additional parameters that given on
+    contract creation OR function calling.
     Parameters:
     1. Array - array of parameters.
         - Strings - dynamic argument.
@@ -104,7 +109,8 @@ def getData(params, data=None):
         - Single level of Arrays of any type.
         - Booleans.
         - Addresses - contract or private account.
-        - Floats."""
+        - Floats.
+    2. Data - contract code OR method ID, see 'getMethodID'"""
     def _paramsMapper(param):
         if isinstance(param, list):
             param.insert(0, len(param))
