@@ -10,7 +10,7 @@ Example of usage:
 
 .. code-block:: python
 
-    from pyethtools.request import PersonalRequest, Request
+    from pyethtools import PersonalRequest, Request
     from pyethtools import hextools as ht
 
     _ipcaddr = 'http://localhost', 8545
