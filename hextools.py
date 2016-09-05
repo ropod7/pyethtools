@@ -99,7 +99,6 @@ def encodeData(data):
     elif isinstance(data, list):
         raise ValueError("Unsupported list data format")
     else:
-        print data
         raise ValueError("Unsupported data format")
 
 def getMethodID(signature):
