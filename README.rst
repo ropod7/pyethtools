@@ -38,7 +38,8 @@ Example of usage:
 	"from" : account,
 	"to"   : contractAddress,
 	"gas"  : 10**6,
-	"data" : ht.getData([2**16, ['0x972', 123], "0123456789", "Hello, world!"], data=txData)  # encoding additional data
+	# encoding additional data:
+	"data" : ht.getData([2**16, ['0x972', 123], "0123456789", "Hello, world!"], data=txData)
 	# ht.getData returns:
 	# 0x96081302
 	# 0000000000000000000000000000000000000000000000000000000000010000
