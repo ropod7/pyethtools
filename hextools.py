@@ -69,7 +69,6 @@ def toHex(data):
     1. String|Number|Object|Array|BigNumber - The value to parse to HEX.
     If its a BigNumber it will make it the HEX value of a number."""
     def _mapper(symbol):
-        if isinstance(symbol, unicode): print "unicode"
         return hex(ord(symbol))[2:]
     if isinstance(data, str) or isinstance(data, unicode):
         if _checkForHex(data):
@@ -134,15 +133,13 @@ def getData(params, data=None):
             if isHex or param.isdigit():
                 arg = param
             else:
+                param = param.encode("utf8")
                 arg = [1, [len(param), param]]
             return arg
         elif isinstance(param, int) or isinstance(param, float):
             return param
     def _mapper(item):
-        if isinstance(item, unicode) or isinstance(item, str):
-            return encodeData(item.encode("utf8"))[2:]
-        else:
-            return encodeData(item)[2:]
+        return encodeData(item)[2:]
     assert data is not None, "None type of data"
     assert _checkForHex(data), "Given data must be in hex format"
     assert isinstance(params, list) or len(params) is 0, "Given data must be in list format with len > 0"
