@@ -9,6 +9,7 @@ Example of usage:
 ----------------------------------
 
 .. code-block:: python
+
   from pyethtools.request import PersonalRequest, Request
   from pyethtools import hextools as ht
 
