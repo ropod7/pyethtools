@@ -94,7 +94,7 @@ def encodeData(data):
         print data
         raise ValueError("Unsupported data format")
 
-def getMethodID(self, signature):
+def getMethodID(signature):
     """Returns 4 bytes of sha3 function signature as function ID to give in 'getData'"""
     assert _checkForHex(signature), "Given signature not in hex format"
     return signature[:10]
@@ -102,6 +102,9 @@ def getMethodID(self, signature):
 def getData(params, data=None):
     """Returns fully encoded data with additional parameters that given on
     contract creation OR function calling.
+    NB: On giving a list of parameters user will check the additional
+    sequence of list to give them as in contract constructor or function
+    call to encode equal sequence, because 'getData' is not a compiler:
     Parameters:
     1. Array - array of parameters.
         - Strings - dynamic argument.
