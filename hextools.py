@@ -137,17 +137,3 @@ def getData(params, data=None):
         i+=1
     result = data + "".join(map(_mapper, hexarr))
     return result
-
-if __name__ == "__main__":
-    from request import Request
-    req = Request('http://localhost', 8545)
-    string = u"The Solidity optimizer operates on assembly, so it can be and also is used by other languages. It splits the sequence of instructions into basic blocks at JUMPs and JUMPDESTs. Inside these blocks, the instructions are analysed and every modification to the stack, to memory or storage is recorded as an expression which consists of an instruction and a list of arguments which are essentially pointers to other expressions"
-    #print encodeData(3.978)
-    data = getData([u'0x123', ['0x456', '0x789'], "1234567890", 765.122, string], data="0x26e365b0")
-    #print data
-    remain = len(data)%64
-    counter = len(data) + 64-remain if remain else len(data)+64
-    data = data[10:]
-    for line in [data[i-64:i] for i in range(64,counter,64)]:
-        print line
-    #print [string[i-64:i] for i in range(64,2880,64)]
