@@ -4,9 +4,10 @@ pyethtools: Python Ethereum Tools
 
 1. Contains Ethereum JSON-RPC cover in request.py module.
 2. Hex encode tools for encode additional parameters using transactions.
-=====
-Usage
-=====
+
+=================================
+Usage:
+=================================
 
 .. code-block:: python
   from pyethtools.request import PersonalRequest, Request
