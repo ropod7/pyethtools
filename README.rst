@@ -19,18 +19,18 @@ Example of usage:
 
     coinbase = r.eth_coinbase
     account = pr.personal_newAccount("password") # returns accounts private address
-
-    unlocked = pr.personal_unlockAccount(account, "password") # returns True or False
+    contractAddress = "0x123" # as example
 
     # To encode additional parameters:
     method = "testCall(uint,uint32[],bytes10,string)"
-    contractAddress = "0x123" # as example
-
-    # following two method calls are equal in Geth JavaScript Console 'web3.sha3(method)':
-    hexstr = ht.toHex(method) # 0x7465737443616c6c2875696e742c75696e7433325b5d2c627974657331302c737472696e6729
-    signature = r.web3_sha3(method) # 0x96081302811f55aff14451d09c81b2a499b71fd6387d5480bb6b5afa56f0e663
-
+    # following two method calls are equal in 'web3.sha3(method)':
+    hexstr = ht.toHex(method)
+    # 0x7465737443616c6c2875696e742c75696e7433325b5d2c627974657331302c737472696e6729
+    signature = r.web3_sha3(method)
+    # 0x96081302811f55aff14451d09c81b2a499b71fd6387d5480bb6b5afa56f0e663
     txData = ht.getMethodID(signature) # 0x96081302 is methodID
+
+    unlocked = pr.personal_unlockAccount(account, "password") # returns True or False
 
     # make transaction:
     if unlocked:
@@ -38,12 +38,17 @@ Example of usage:
             "from" : account,
             "to"   : contractAddress,
             "gas"  : 10**6,
-            # NB: On giving a list of parameters user will check the additional
-            # sequence to give them as in contract constructor or function call
-            # to encode equal sequence, because 'getData' is not a compiler:
-            "data" : ht.getData([2**16, ['0x972', 123], "0123456789", "Hello, world!"], data=txData),
+            # NB: On giving a list of parameters make shore that the additional
+            # sequence of list is equals to a contract constructor or function
+            # call arguments for the required encoding, because 'getData' is not
+            # a compiler.
+            # Example of given function "testCall(uint,uint32[],bytes10,string)":
+            "data" : ht.getData(
+                    [2**16, ['0x972', 123], "0123456789", "Hello, world!"],
+                    data=txData
+                    ),
 
-            # ht.getData returns:
+            # getData returns:
             # 0x96081302
             # 0000000000000000000000000000000000000000000000000000000000010000
             # 0000000000000000000000000000000000000000000000000000000000000080
