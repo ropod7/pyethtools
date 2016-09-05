@@ -31,16 +31,14 @@ def intToPaddedHex(data):
 def floatToPaddedHex(data):
     """Returns padded hex of float."""
     assert isinstance(data, float), "Given data not a float type"
-    integer = hex(int(data))[2:]
-    fraction = format(data%int(data))
-    fraction32 = hex(int(256*float(fraction)))[2:]
-    hexed = [integer, fraction32]
+    left, right = toHex(data).split('.')
+    hexed = left[2:], right
     return _push(hexed, floated=True)
 
 def strToPaddedHex(data):
     """Returns padded hex of string."""
     assert isinstance(data, str) or isinstance(data, unicode), "Given data not a str or unicode type"
-    hexed = strToHex(data)
+    hexed = toHex(data)
     chlen = len(hexed[2:])
     if chlen > 64:
         remain = chlen % 64
@@ -62,19 +60,29 @@ def hexToPaddedHex(data):
         splitted = data.split('x')
         return _push(splitted[1])
 
-def strToHex(data):
+def toHex(data):
     """Converts any value into HEX.
     Parameters:
     1. String|Number|Object|Array|BigNumber - The value to parse to HEX.
     If its a BigNumber it will make it the HEX value of a number."""
     def _mapper(symbol):
         return hex(ord(symbol))[2:]
-    strinp = isinstance(data, str)
-    data = json.dumps(data)
-    data = data[1:-1] if strinp else data
-    encoded = ["0x"]
-    hexlist = list(map(_mapper, data))
-    return ''.join(encoded + hexlist)
+    if isinstance(data, str):
+        if _checkForHex(data):
+            return data
+        encoded = ["0x"]
+        hexlist = list(map(_mapper, data))
+        return ''.join(encoded + hexlist)
+    elif isinstance(data, int):
+        return hex(data)
+    elif isinstance(data, float):
+        integer = hex(int(data))
+        fraction = format(data%int(data))
+        fraction32 = hex(int(256*float(fraction)))[2:]
+        return '.'.join([integer, fraction32])
+    else:
+        data = json.dumps(data)
+        return toHex(data)
 
 def encodeData(data):
     """Encodes any data to Ethereum blockchain format with paddings.
@@ -132,11 +140,11 @@ def getData(params, data=None):
     assert data is not None, "None type of data"
     assert _checkForHex(data), "Given data must be in hex format"
     assert isinstance(params, list) or len(params) is 0, "Given data must be in list format with len > 0"
-    data32 = list(map(_paramsMapper, params))
-    pos = len(data32)
+    params = list(map(_paramsMapper, params))
+    pos = len(params)
     hexarr = []
     i = 0
-    for item in data32:
+    for item in params:
         if isinstance(item, list):
             hexarr.insert(i, pos*32)
             pos += len(item[1])

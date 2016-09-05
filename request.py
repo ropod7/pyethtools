@@ -2,7 +2,6 @@ import sys
 import sha3
 import pycurl, json
 from StringIO import StringIO
-from hextools import strToHex
 
 class EthConnectionError(Exception):
     def __init__(self, *args):
