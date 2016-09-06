@@ -115,9 +115,10 @@ def getMethodID(signature):
 def getData(params, data=None):
     """Returns fully encoded data with additional parameters that given on
     contract creation OR function calling.
-    NB: On giving a list of parameters user will check the additional
-    sequence of list to give them as in contract constructor or function
-    call to encode equal sequence, because 'getData' is not a compiler:
+    NB: On giving a list of parameters make shore that the additional
+    # sequence of list is equals to a contract constructor or function
+    # call arguments for the required encoding, because 'getData' is not
+    # a compiler.
     Parameters:
     1. Array - array of parameters.
         - Strings - dynamic argument.
@@ -158,3 +159,68 @@ def getData(params, data=None):
         i+=1
     result = data + "".join(map(_mapper, hexarr))
     return result
+
+def decodeData(data, types=(), _decoded=None):
+    """Returns list of Hex or list fully decoded Data received from active
+    contract on blockchain.
+    To decode data make shore that the given list of types have the same
+    sequence as contract returns, otherwise function returns breaked Hexnumbers.
+    Parameters:
+    1. Hexnumber - result that contract returns
+    2. Equal sequence of Solidity types of Python tuple.
+        - Python int/long is Solidity uint8/uint256 types
+        - Python str/unicode is Solidity bytes (not any) or string types
+        - Python str of digits [str.isdigit()] is a Solidity bytes10 type
+        - Python hex format is any hash types of Solidity (address|tx hash etc.)
+        - Python float is a Soliditys fixed128x128 (returns in hex format)."""
+    assert data is not None or _checkForHex(data), "Unknown data type"
+    assert isinstance(types, tuple), "Types must be a sequence of list"
+    assert dict not in types, "Unsupported type of dict"
+    assert not (len(data)-2) % 64, "Unknown length of bytes"
+    if data == u"0x": return [hex(0)]
+    def _typeMapper(line):
+        tp, data = line
+        if tp is str or tp is unicode:
+            return unhexlify(data[2:])
+        elif tp is int or tp is long:
+            return tp(data, 0) if data != "0x" else 0
+        elif tp is float:
+            left, right = data[:32], data[32:34]
+            data = ".".join([''.join(_brokeline(left)), right])
+            return "0x" + ''.join(_brokeline(data, z=1))
+        elif tp is hex:
+            return data
+        else:
+            raise ValueError("%s Unsopported type format" % tp)
+    def _brokeline(line, z=2):
+        _z = u"0" * z
+        return [line[i-z:i] for i in range(z, len(line)+1, z) if line[i-z:i] != _z]
+    data = data[2:]
+    counter = len(data) + 64
+    lines = [data[i-64:i] for i in range(64, counter, 64)]
+    lentypes = len(types) if types else len(lines)
+    decoded = [] if _decoded is None else _decoded
+    j = 0
+    for i in range(lentypes):
+        hexline = "0x" + lines[j]
+        if not types:
+            decoded.append("".join(_brokeline(hexline)))
+        elif types[i] is str and hexline[2:4] == u"00":
+            strpos = int(hexline, 0) / 32 + 1
+            strlen = int("0x" + lines[strpos-1], 0) * 2
+            strpos = strpos * 64
+            listobj = [types[i], "0x" + data[strpos:strpos+strlen]]
+            decoded.append(listobj)
+        elif type(types[i]) is list:
+            assert types[i], "Empty list"
+            pos = i * 64 + len(types) * 64
+            hexstr = "0x" + "".join(data[i*64:pos])
+            decodeData(hexstr, types=tuple(types[i]), _decoded=decoded)
+            j += len(types[i]) - 1
+        elif types[i] is float:
+            decoded.append([types[i], hexline[2:]])
+        else:
+            decoded.append([types[i], "".join(_brokeline(hexline))])
+        j += 1
+    return map(_typeMapper, decoded) if types else decoded
+
