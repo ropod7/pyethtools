@@ -160,7 +160,7 @@ def getData(params, data=None):
     result = data + "".join(map(_mapper, hexarr))
     return result
 
-def decodeData(data, types=(), _decoded=None):
+def decodeData(data, types=()):
     """Returns list of Hex or list fully decoded Data received from active
     contract on blockchain.
     To decode data make shore that the given list of types have the same
@@ -179,6 +179,8 @@ def decodeData(data, types=(), _decoded=None):
     assert not (len(data)-2) % 64, "Unknown length of bytes"
     if data == u"0x": return [hex(0)]
     def _typeMapper(line):
+        if line[0] is list:
+            return line[1:]
         tp, data = line
         if tp is str or tp is unicode:
             return unhexlify(data[2:])
@@ -191,7 +193,7 @@ def decodeData(data, types=(), _decoded=None):
         elif tp is hex:
             return data
         else:
-            raise ValueError("%s Unsopported type format" % tp)
+            raise TypeError("%s Unsopported type format" % tp)
     def _brokeline(line, z=2):
         _z = u"0" * z
         return [line[i-z:i] for i in range(z, len(line)+1, z) if line[i-z:i] != _z]
@@ -199,12 +201,18 @@ def decodeData(data, types=(), _decoded=None):
     counter = len(data) + 64
     lines = [data[i-64:i] for i in range(64, counter, 64)]
     lentypes = len(types) if types else len(lines)
-    decoded = [] if _decoded is None else _decoded
+    decoded = []
     j = 0
     for i in range(lentypes):
         hexline = "0x" + lines[j]
         if not types:
             decoded.append("".join(_brokeline(hexline)))
+        elif types[i] is list:
+            raise TypeError("list must be a list of types, not a type")
+        elif types[i] is int:
+            decoded.append([types[i], hexline])
+        elif types[i] is float:
+            decoded.append([types[i], hexline[2:]])
         elif types[i] is str and hexline[2:4] == u"00":
             strpos = int(hexline, 0) / 32 + 1
             strlen = int("0x" + lines[strpos-1], 0) * 2
@@ -213,12 +221,12 @@ def decodeData(data, types=(), _decoded=None):
             decoded.append(listobj)
         elif type(types[i]) is list:
             assert types[i], "Empty list"
-            pos = i * 64 + len(types) * 64
-            hexstr = "0x" + "".join(data[i*64:pos])
-            decodeData(hexstr, types=tuple(types[i]), _decoded=decoded)
+            pos = j * 64 + len(types[i]) * 64
+            hexstr = "0x" + data[j*64:pos]
+            array = decodeData(hexstr, types=tuple(types[i]))
+            array.insert(0, list)
+            decoded.append(array)
             j += len(types[i]) - 1
-        elif types[i] is float:
-            decoded.append([types[i], hexline[2:]])
         else:
             decoded.append([types[i], "".join(_brokeline(hexline))])
         j += 1
