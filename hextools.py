@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+from binascii import unhexlify
 import json
 
 def _push(data, floated=False):
@@ -25,8 +26,8 @@ def _checkForHex(data):
 
 def intToPaddedHex(data):
     """Returns padded hex of int."""
-    assert isinstance(data, int), "Given data not an int type"
-    hexdata = hex(data)[2:]
+    assert isinstance(data, int) or isinstance(data, long), "Given data not an int type"
+    hexdata = toHex(data)[2:]
     return _push(hexdata)
 
 def floatToPaddedHex(data):
@@ -39,7 +40,7 @@ def floatToPaddedHex(data):
 def strToPaddedHex(data):
     """Returns padded hex of string."""
     assert isinstance(data, str) or isinstance(data, unicode), "Given data not a str or unicode type"
-    hexed = toHex(data)
+    hexed = toHex(data.encode("utf8"))
     chlen = len(hexed[2:])
     if chlen > 64:
         remain = chlen % 64
@@ -78,6 +79,8 @@ def toHex(data):
         return ''.join(encoded + hexlist)
     elif isinstance(data, int):
         return hex(data)
+    elif isinstance(data, long):
+        return hex(data)[:-1]
     elif isinstance(data, float):
         integer = hex(int(data))
         fraction = format(data%int(data))
@@ -133,9 +136,7 @@ def getData(params, data=None):
             if isHex or param.isdigit():
                 arg = param
             else:
-                param = param.encode("utf8")
-                arg = [1, [len(param), param]]
-            return arg
+                return [1, [len(param), param]]
         elif isinstance(param, int) or isinstance(param, float):
             return param
     def _mapper(item):
