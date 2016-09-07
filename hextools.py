@@ -14,6 +14,13 @@ def _push(data, floated=False):
         right += _zeroes(right, padn)
     return '0x%s' % _zeroes(left, padn) + left + right
 
+def _breakeline(line, s=2, clean=True):
+    if clean:
+        z = u"0" * s
+        return [line[i-s:i] for i in range(s, len(line)+1*s, s) if line[i-s:i] != z]
+    else:
+        return [line[i-s:i] for i in range(s, len(line)+1*s, s)]
+
 def _checkForHex(data):
     assert isinstance(data, unicode) or isinstance(data, str), "Unknown data format"
     if data.isdigit():
@@ -160,14 +167,15 @@ def getData(params, data=None):
     result = data + "".join(map(_mapper, hexarr))
     return result
 
-def decodeData(data, types=()):
-    """Returns list of Hex or list fully decoded Data received from active
+def decodeArgData(data, types=()):
+    """Returns list of fully decoded Data received from active
     contract on blockchain.
     To decode data make shore that the given list of types have the same
-    sequence as contract returns, otherwise function returns breaked Hexnumbers.
+    sequence as contract returns, otherwise function returns exception.
+    To decode automatically simple results see 'decodeData'.
     Parameters:
     1. Hexnumber - result that contract returns
-    2. Equal sequence of Solidity types of Python tuple.
+    2. Equal sequence of Solidity types placed to the Python tuple.
         - Python int/long is Solidity uint8/uint256 types
         - Python str/unicode is Solidity bytes (not any) or string types
         - Python str of digits [str.isdigit()] is a Solidity bytes10 type
@@ -175,38 +183,35 @@ def decodeData(data, types=()):
         - Python float is a Soliditys fixed128x128 (returns in hex format)."""
     assert data is not None or _checkForHex(data), "Unknown data type"
     assert isinstance(types, tuple), "Types must be a sequence of list"
+    assert types, "Zero length of types"
     assert dict not in types, "Unsupported type of dict"
-    assert not (len(data)-2) % 64, "Unknown length of bytes"
+    assert not (len(data)-2) % 64, "Unknown length of Hexnumber"
     if data == u"0x": return [hex(0)]
     def _typeMapper(line):
         if line[0] is list:
             return line[1:]
         tp, data = line
         if tp is str or tp is unicode:
-            return unhexlify(data[2:])
+            return toUnicode(data)
         elif tp is int or tp is long:
             return tp(data, 0) if data != "0x" else 0
         elif tp is float:
             left, right = data[:32], data[32:34]
-            data = ".".join([''.join(_brokeline(left)), right])
-            return "0x" + ''.join(_brokeline(data, z=1))
+            data = ".".join([''.join(_breakeline(left)), right])
+            return "0x" + ''.join(_breakeline(data, s=1))
         elif tp is hex:
             return data
         else:
             raise TypeError("%s Unsopported type format" % tp)
-    def _brokeline(line, z=2):
-        _z = u"0" * z
-        return [line[i-z:i] for i in range(z, len(line)+1, z) if line[i-z:i] != _z]
     data = data[2:]
-    counter = len(data) + 64
-    lines = [data[i-64:i] for i in range(64, counter, 64)]
+    lines = _breakeline(data, s=64, clean=False)
     lentypes = len(types) if types else len(lines)
     decoded = []
     j = 0
     for i in range(lentypes):
         hexline = "0x" + lines[j]
         if not types:
-            decoded.append("".join(_brokeline(hexline)))
+            decoded.append("".join(_breakeline(hexline)))
         elif types[i] is list:
             raise TypeError("list must be a list of types, not a type")
         elif types[i] is int:
@@ -223,12 +228,71 @@ def decodeData(data, types=()):
             assert types[i], "Empty list"
             pos = j * 64 + len(types[i]) * 64
             hexstr = "0x" + data[j*64:pos]
-            array = decodeData(hexstr, types=tuple(types[i]))
+            array = decodeArgData(hexstr, types=tuple(types[i]))
             array.insert(0, list)
             decoded.append(array)
             j += len(types[i]) - 1
         else:
-            decoded.append([types[i], "".join(_brokeline(hexline))])
+            decoded.append([types[i], "".join(_breakeline(hexline))])
         j += 1
     return map(_typeMapper, decoded) if types else decoded
 
+def decodeWord(word):
+    testline = "".join(_breakeline(word))
+    if len(testline) < 38:
+        return int(word, 0)
+    else:
+        return testline
+
+def toUnicode(word):
+    return unhexlify(word[2:])
+
+def decodeData(data):
+    """Returns list of fully decoded Data received from active
+    contract on blockchain.
+    To decode more complex results see 'decodeArgData'.
+    Parameters:
+    1. Hexnumber - result that contract returns"""
+    assert data is not None or _checkForHex(data), "Unknown data type"
+    assert not (len(data)-2) % 64, "Unknown length of bytes"
+    if data == u"0x": return [hex(0)]
+    def _decode(line):
+        if isinstance(line, tuple):
+            return toUnicode(line[0])
+        else:
+            return decodeWord(line)
+    data = data[2:]
+    counter = len(data) + 64
+    lines = _breakeline(data, s=64, clean=False)
+    decoded = []
+    strline = ""
+    empty = u"00"
+    linepos = []
+    lenlines = len(lines)
+    for i in range(lenlines-1, -1, -1):
+        l = lines[i]
+        hexline = "0x" + l
+        zerohead, zerotail = l.startswith(empty), l.endswith(empty)
+        if zerotail and not zerohead and not strline:
+            l = "".join(_breakeline(l))
+            strline = l + strline
+        elif zerotail and not zerohead and strline:
+            decoded.append(("0x" + strline,))
+            strline = ""
+            l = "".join(_breakeline(l))
+            strline = l + strline
+        elif not zerotail and not zerohead:
+            strline = l + strline
+        elif zerohead and int(hexline, 0) == len(strline)/2 and strline:
+            decoded.append(("0x" + strline,))
+            strline = ""
+            linepos.insert(0, float(i))
+        elif int(hexline, 0)/32.0 not in linepos:
+            if strline:
+                decoded.append(("0x" + strline,))
+                strline = ""
+            decoded.extend(["0x" + l])
+        else:
+            if linepos:
+                linepos.pop()
+    return list(map(_decode, reversed(decoded)))
