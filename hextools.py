@@ -144,7 +144,8 @@ def getData(params, data=None):
             if isHex or param.isdigit():
                 arg = param
             else:
-                return [1, [len(param), param]]
+                arg = [1, [len(param), param]]
+            return arg
         elif isinstance(param, int) or isinstance(param, float):
             return param
     def _mapper(item):
@@ -177,11 +178,13 @@ def decodeArgData(data, types=()):
     1. Hexnumber - result that contract returns
     2. Equal sequence of Solidity types placed to the Python tuple.
         - Python int/long is Solidity uint8/uint256 types
-        - Python str/unicode is Solidity bytes (not any) or string types
+        - Python str/unicode is Solidity bytes (not all) or string types
         - Python str of digits [str.isdigit()] is a Solidity bytes10 type
         - Python hex format is any hash types of Solidity (address|tx hash etc.)
         - Python float is a Soliditys fixed128x128 (returns in hex format)."""
-    assert data is not None or _checkForHex(data), "Unknown data type"
+    _exc = "Unknown data type"
+    assert isinstance(data, str) or isinstance(data, unicode), _exc
+    assert data is not None or _checkForHex(data), _exc
     assert isinstance(types, tuple), "Types must be a sequence of list"
     assert types, "Zero length of types"
     assert dict not in types, "Unsupported type of dict"
@@ -238,6 +241,9 @@ def decodeArgData(data, types=()):
     return map(_typeMapper, decoded) if types else decoded
 
 def decodeWord(word):
+    _exc = "Unknown data type"
+    assert isinstance(word, str) or isinstance(word, unicode), _exc
+    assert word is not None or _checkForHex(word), _exc
     testline = "".join(_breakline(word))
     if len(testline) < 38:
         return int(word, 0)
@@ -245,6 +251,9 @@ def decodeWord(word):
         return testline
 
 def toUnicode(word):
+    _exc = "Unknown data type"
+    assert isinstance(word, str) or isinstance(word, unicode), _exc
+    assert word is not None or not _checkForHex(word), _exc
     return unhexlify(word[2:])
 
 def decodeData(data):
@@ -253,7 +262,9 @@ def decodeData(data):
     To decode more complex results see 'decodeArgData'.
     Parameters:
     1. Hexnumber - result that contract returns"""
-    assert data is not None or _checkForHex(data), "Unknown data type"
+    _exc = "Unknown data type"
+    assert isinstance(data, str) or isinstance(data, unicode), _exc
+    assert data is not None or _checkForHex(data), _exc
     assert not (len(data)-2) % 64, "Unknown length of bytes"
     if data == u"0x": return [hex(0)]
     def _decode(line):
@@ -273,25 +284,31 @@ def decodeData(data):
         l = lines[i]
         hexline = "0x" + l
         zerohead, zerotail = l.startswith(empty), l.endswith(empty)
+        # check for last line of string
         if zerotail and not zerohead and not strline:
             l = "".join(_breakline(l))
             strline = l + strline
+        # check for bytes10 string
         elif zerotail and not zerohead and strline:
             decoded.append(("0x" + strline,))
             strline = ""
             l = "".join(_breakline(l))
             strline = l + strline
+        # if multiply lines in string
         elif not zerotail and not zerohead:
             strline = l + strline
+        # check for line that contains length of string
         elif zerohead and int(hexline, 0) == len(strline)/2 and strline:
             decoded.append(("0x" + strline,))
             strline = ""
             linepos.insert(0, float(i))
+        # if not string or bytes10 types just append
         elif int(hexline, 0)/32.0 not in linepos:
             if strline:
                 decoded.append(("0x" + strline,))
                 strline = ""
             decoded.extend(["0x" + l])
+        # if line contains start byte of string
         else:
             if linepos:
                 linepos.pop()
