@@ -73,8 +73,12 @@ Example of usage:
         else:
             print "balance is too low"
 
+
+Example of decode:
+----------------------
+
 Let's imagine that function returns single Hexnumber of:
-    (uint8, address, bytes10, string, uint[3], string)
+(uint8, address, bytes10, string, uint[3], string)
 
 .. code-block:: shell
 
@@ -108,9 +112,6 @@ Let's imagine that function returns single Hexnumber of:
     20657175616c20286f6e20657665727920696e7075742920616e6420636f6d62
     696e65207468656d20696e746f20616e2065787072657373696f6e20636c6173
     7300000000000000000000000000000000000000000000000000000000000000
-
-Example of decode:
-----------------------
 
 .. code-block:: python
 
