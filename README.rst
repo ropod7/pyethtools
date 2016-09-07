@@ -77,8 +77,9 @@ Example of usage:
 Example of decode:
 ----------------------
 
-Let's imagine that function returns single Hexnumber of:
-(uint8, address, bytes10, string, uint[3], string)
+Let's imagine that function returns single Hexnumber of
+(uint8, address, bytes10, string, uint[3], string):
+
 
 .. code-block:: shell
 
