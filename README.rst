@@ -114,14 +114,14 @@ Example of decode:
 
 .. code-block:: python
 
-    hx = toHex("readData()")
-    methodID = getMethodID(request.web3_sha3(hx))
+    hx = ht.toHex("readData()")
+    methodID = ht.getMethodID(r.web3_sha3(hx))
     data = {
         "from" : reader,
         "to"   : contractAddress,
         "data" : methodID,
     }
-    methodData = request.eth_call(data)
+    methodData = r.eth_call(data)
 
     # Now we will decode received methodData:
     print ht.decodeData(methodData)
