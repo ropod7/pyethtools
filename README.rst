@@ -1,5 +1,5 @@
 =================================
-pyethtools: Python Ethereum Tools
+pyEthTools: Python Ethereum Tools
 =================================
 
 1. Contains Ethereum JSON-RPC cover.
@@ -117,14 +117,15 @@ Example of decode:
     hx = ht.toHex("readData()")
     methodID = ht.getMethodID(r.web3_sha3(hx))
     data = {
-        "from" : reader,
+        "from" : coinbase,
         "to"   : contractAddress,
         "data" : methodID,
     }
     methodData = r.eth_call(data)
 
     # Now we will decode received methodData:
-    print ht.decodeData(methodData)
+    for l in ht.decodeData(methodData):
+        print l
 
     # So, the decoded data should looks like:
     # 255
@@ -144,7 +145,8 @@ Example of decode:
     # combine them into an expression class
 
     # for more complex data we may use the 'decodeArgData':
-    print ht.decodeArgData(methodData, types=(int, hex, str, str, [int, int, int], str))
+    for l in ht.decodeArgData(methodData, types=(int, hex, str, str, [int, int, int], str)):
+        print l
 
     # 255
     # 0xca35b7d915458ef5401234568dfe2f44e8fa733c
