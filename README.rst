@@ -14,7 +14,7 @@ Example of usage:
     from pyethtools import PersonalRequest, Request
     from pyethtools import hextools as ht
 
-    _ipcaddr = 'http://localhost', 8545
+    _ipcaddr = 'http://localhost', 8546
     r = Request(*_ipcaddr)
     pr = PersonalRequest(*_ipcaddr)
 
@@ -41,8 +41,8 @@ Example of usage:
             "from" : account,
             "to"   : contractAddress,
             "gas"  : 10**6,
-            # NB: On giving a list of parameters make shore that the additional
-            # sequence of list is equals to a contract constructor or function
+            # NB: On the giving list of parameters make shore that the additional
+            # sequence of list is equals to a contract constructor, or function
             # call arguments for the required encoding, because 'getData' is not
             # a compiler.
             # Example of given function "testCall(uint,uint32[],bytes10,string)":
@@ -51,7 +51,7 @@ Example of usage:
                     data=txData
                     ),
 
-            # getData returns:
+            # getData returns single Hexnumber:
             # 0x96081302
             # 0000000000000000000000000000000000000000000000000000000000010000
             # 0000000000000000000000000000000000000000000000000000000000000080
@@ -129,7 +129,7 @@ Let's imagine that function returns single Hexnumber of
     for l in ht.decodeData(methodData):
         print l
 
-    # So, the decoded data should looks like:
+    # So, the decodeData returns list of values:
     # 255
     # 0xca35b7d915458ef5401234568dfe2f44e8fa733c
     # 123456789
