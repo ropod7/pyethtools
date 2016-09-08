@@ -1,7 +1,12 @@
+# -*- coding: utf8 -*-
 import sys
-import sha3
 import pycurl, json
-from StringIO import StringIO
+try:
+    # Python 3
+    from io import BytesIO
+except ImportError:
+    # Python 2
+    from StringIO import StringIO as BytesIO
 
 class EthConnectionError(Exception):
     def __init__(self, *args):
@@ -17,7 +22,7 @@ class BaseRequest(object):
         self._requestData = {"jsonrpc":"2.0","method":"","params":[],"id":0}
 
     def _executeCurl(self, postfields):
-        self._buff = StringIO()
+        self._buff = BytesIO()
         curl = pycurl.Curl()
         curl.setopt(curl.URL, self._ipcaddr)
         # Content-Type header to application/json
@@ -37,7 +42,7 @@ class BaseRequest(object):
         decoder = json.JSONDecoder()
         postfields = json.dumps(requestData)
         self._executeCurl(postfields)
-        body = self._buff.getvalue()
+        body = self._buff.getvalue().decode('utf-8')
         self._buff.close()
         # Body is a string in some encoding.
         # In Python 2, we can print it without knowing what the encoding is.
@@ -112,7 +117,7 @@ class Request(BaseRequest):
         result = self._setRequest(data)
         if result:
             bases = [0 for i in range(len(result))]
-            return dict(zip(result.keys(), map(int, result.values(), bases)))
+            return dict(zip(result.keys(), list(map(int, result.values(), bases))))
         return result
 
     @property

@@ -2,6 +2,8 @@
 pyEthTools: Python Ethereum Tools
 =================================
 
+ - Supports python2 and python3 versions
+
 1. Contains Ethereum JSON-RPC cover.
 2. Hexnumber encode tools for encode additional parameters in transactions.
 3. Hexnumber decode tools for decode data that contract returns.

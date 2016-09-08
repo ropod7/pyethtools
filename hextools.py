@@ -1,4 +1,5 @@
 # -*- coding: utf8 -*-
+import sys
 from binascii import unhexlify
 import json
 
@@ -21,12 +22,28 @@ def _breakline(line, s=2, clean=True):
     else:
         return [line[i-s:i] for i in range(s, len(line)+1*s, s)]
 
+def _assertNotString(data):
+    _exc = "Unsupported data format %s" % type(data)
+    if sys.version[0] is "2":
+        assert isinstance(data, str) or isinstance(data, unicode), _exc
+    else:
+        assert isinstance(data, str) or isinstance(data, bytes), _exc
+
+def _isstring(data):
+    if sys.version[0] is "2":
+        return isinstance(data, unicode) or isinstance(data, str)
+    else:
+        return isinstance(data, str) or isinstance(data, bytes)
+
 def _checkForHex(data):
-    assert isinstance(data, unicode) or isinstance(data, str), "Unknown data format"
+    _assertNotString(data)
     if data.isdigit():
         return False
     try:
-        longn = isinstance(int(data, 0), long)
+        try:
+            longn = isinstance(int(data, 0), long)
+        except NameError:
+            longn = False
         return longn if longn else isinstance(int(data, 0), int)
     except ValueError:
         return False
@@ -46,8 +63,14 @@ def floatToPaddedHex(data):
 
 def strToPaddedHex(data):
     """Returns padded hex of string."""
-    assert isinstance(data, str) or isinstance(data, unicode), "Given data not a str or unicode type"
-    hexed = toHex(data.encode("utf8"))
+    _assertNotString(data)
+    if sys.version[0] is "2":
+        try:
+            hexed = toHex(data.decode("utf8").encode("utf8"))
+        except UnicodeEncodeError:
+            hexed = toHex(unicode(data).encode("utf8"))
+    else:
+        hexed = toHex(data.encode("utf8"))
     chlen = len(hexed[2:])
     if chlen > 64:
         remain = chlen % 64
@@ -62,6 +85,7 @@ def strToPaddedHex(data):
 
 def hexToPaddedHex(data):
     """Returns padded hex number."""
+    _assertNotString(data)
     assert _checkForHex(data), "Given data not hex, try 'strToPaddedHex'"
     if len(data) is 66:
         return data
@@ -77,8 +101,12 @@ def toHex(data):
     1. String|Number|Object|Array|BigNumber - The value to parse to HEX.
     If its a BigNumber it will make it the HEX value of a number."""
     def _mapper(symbol):
-        return hex(ord(symbol))[2:]
-    if isinstance(data, str) or isinstance(data, unicode):
+        try:
+            return hex(ord(symbol))[2:]
+        except TypeError:
+            return hex(symbol)[2:]
+    isstring = _isstring(data)
+    if isstring:
         if _checkForHex(data):
             return data
         encoded = ["0x"]
@@ -86,7 +114,7 @@ def toHex(data):
         return ''.join(encoded + hexlist)
     elif isinstance(data, int):
         return hex(data)
-    elif isinstance(data, long):
+    elif sys.version[0] is "2" and isinstance(data, long):
         return hex(data)[:-1]
     elif isinstance(data, float):
         integer = hex(int(data))
@@ -102,11 +130,12 @@ def encodeData(data):
     Parameters:
     1. String|Number|Bool|BigNumber|Hexnumber|Address|Float - The value to encode.
     """
+    isstring = _isstring(data)
     if isinstance(data, int):
         return intToPaddedHex(data)
     elif isinstance(data, float):
         return floatToPaddedHex(data)
-    elif isinstance(data, str) or isinstance(data, unicode):
+    elif isstring:
         isHex = _checkForHex(data)
         return hexToPaddedHex(data) if isHex else strToPaddedHex(data)
     elif isinstance(data, list):
@@ -136,16 +165,19 @@ def getData(params, data=None):
         - Floats.
     2. Data - contract code OR method ID, see 'getMethodID'"""
     def _paramsMapper(param):
+        isstring = _isstring(param)
         if isinstance(param, list):
             param.insert(0, len(param))
             return [1, param]
-        elif isinstance(param, str) or isinstance(param, unicode):
+        elif isstring:
             isHex = _checkForHex(param)
             if isHex or param.isdigit():
-                arg = param
+                return param
             else:
-                arg = [1, [len(param), param]]
-            return arg
+                try:
+                    return [1, [len(param.encode("utf8")), param]]
+                except UnicodeDecodeError:
+                    return [1, [len(param), param]]
         elif isinstance(param, int) or isinstance(param, float):
             return param
     def _mapper(item):
@@ -165,7 +197,7 @@ def getData(params, data=None):
         else:
             hexarr.insert(i, item)
         i+=1
-    result = data + "".join(map(_mapper, hexarr))
+    result = data + "".join(list(map(_mapper, hexarr)))
     return result
 
 def decodeArgData(data, types=()):
@@ -177,13 +209,12 @@ def decodeArgData(data, types=()):
     Parameters:
     1. Hexnumber - result that contract returns
     2. Equal sequence of Solidity types placed to the Python tuple.
-        - Python int/long is Solidity uint8/uint256 types
+        - Python int is Solidity uint8/uint256 types
         - Python str/unicode is Solidity bytes (not all) or string types
         - Python str of digits [str.isdigit()] is a Solidity bytes10 type
         - Python hex format is any hash types of Solidity (address|tx hash etc.)
         - Python float is a Soliditys fixed128x128 (returns in hex format)."""
-    _exc = "Unknown data type"
-    assert isinstance(data, str) or isinstance(data, unicode), _exc
+    _assertNotString(data)
     assert data is not None or _checkForHex(data), _exc
     assert isinstance(types, tuple), "Types must be a sequence of list"
     assert types, "Zero length of types"
@@ -194,9 +225,13 @@ def decodeArgData(data, types=()):
         if line[0] is list:
             return line[1:]
         tp, data = line
-        if tp is str or tp is unicode:
+        if sys.version[0] is "2":
+            isstring = tp is str or tp is unicode
+        else:
+            isstring = tp is str
+        if isstring:
             return toUnicode(data)
-        elif tp is int or tp is long:
+        elif tp is int or sys.version[0] is "2" and tp is long:
             return tp(data, 0) if data != "0x" else 0
         elif tp is float:
             left, right = data[:32], data[32:34]
@@ -213,6 +248,10 @@ def decodeArgData(data, types=()):
     j = 0
     for i in range(lentypes):
         hexline = "0x" + lines[j]
+        if sys.version[0] is "2":
+            isstring = types[i] is str or types[i] is unicode
+        else:
+            isstring = types[i] is str
         if not types:
             decoded.append("".join(_breakline(hexline)))
         elif types[i] is list:
@@ -221,7 +260,7 @@ def decodeArgData(data, types=()):
             decoded.append([types[i], hexline])
         elif types[i] is float:
             decoded.append([types[i], hexline[2:]])
-        elif types[i] is str and hexline[2:4] == u"00":
+        elif isstring and hexline[2:4] == u"00":
             strpos = int(hexline, 0) / 32 + 1
             strlen = int("0x" + lines[strpos-1], 0) * 2
             strpos = strpos * 64
@@ -238,11 +277,10 @@ def decodeArgData(data, types=()):
         else:
             decoded.append([types[i], "".join(_breakline(hexline))])
         j += 1
-    return map(_typeMapper, decoded) if types else decoded
+    return list(map(_typeMapper, decoded)) if types else decoded
 
 def decodeWord(word):
-    _exc = "Unknown data type"
-    assert isinstance(word, str) or isinstance(word, unicode), _exc
+    _assertNotString(word)
     assert word is not None or _checkForHex(word), _exc
     testline = "".join(_breakline(word))
     if len(testline) < 38:
@@ -251,8 +289,7 @@ def decodeWord(word):
         return testline
 
 def toUnicode(word):
-    _exc = "Unknown data type"
-    assert isinstance(word, str) or isinstance(word, unicode), _exc
+    _assertNotString(word)
     assert word is not None or not _checkForHex(word), _exc
     return unhexlify(word[2:])
 
@@ -262,14 +299,16 @@ def decodeData(data):
     To decode more complex results see 'decodeArgData'.
     Parameters:
     1. Hexnumber - result that contract returns"""
-    _exc = "Unknown data type"
-    assert isinstance(data, str) or isinstance(data, unicode), _exc
+    _assertNotString(data)
     assert data is not None or _checkForHex(data), _exc
     assert not (len(data)-2) % 64, "Unknown length of bytes"
     if data == u"0x": return [hex(0)]
     def _decode(line):
         if isinstance(line, tuple):
-            return toUnicode(line[0])
+            try:
+                return toUnicode(line[0]).decode("utf8")
+            except UnicodeDecodeError:
+                return line[0]
         else:
             return decodeWord(line)
     data = data[2:]
@@ -313,3 +352,32 @@ def decodeData(data):
             if linepos:
                 linepos.pop()
     return list(map(_decode, reversed(decoded)))
+
+if __name__ == "__main__":
+     # returns (int, int)
+     data1 = "0x00000000000000000000000000000000000000000000000000000000000000050000000000000000000000000000000000000000000000000000000000000001"
+     # returns (str, )
+     data2 = "0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000001a654686520536f6c6964697479206f7074696d697a6572206f70657261746573206f6e20617373656d626c792c20736f2069742063616e20626520616e6420616c736f2069732075736564206279206f74686572206c616e6775616765732e2049742073706c697473207468652073657175656e6365206f6620696e737472756374696f6e7320696e746f20626173696320626c6f636b73206174204a554d507320616e64204a554d5044455354732e20496e7369646520746865736520626c6f636b732c2074686520696e737472756374696f6e732061726520616e616c7973656420616e64206576657279206d6f64696669636174696f6e20746f2074686520737461636b2c20746f206d656d6f7279206f722073746f72616765206973207265636f7264656420617320616e2065787072657373696f6e20776869636820636f6e7369737473206f6620616e20696e737472756374696f6e20616e642061206c697374206f6620617267756d656e74732077686963682061726520657373656e7469616c6c7920706f696e7465727320746f206f746865722065787072657373696f6e730000000000000000000000000000000000000000000000000000"
+     data3 = "0x"
+     # returns (int, hex, str, str, [int, int, int], str) !!!!!!!!! in decodeData2
+     data4 = "0x00000000000000000000000000000000000000000000000000000000000000ff000000000000000000000000ca35b7d915458ef540ade6068dfe2f44e8fa733c31323334353637383900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000008d0b7d0b0d0b7d0b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000548656c6c6f000000000000000000000000000000000000000000000000000000"
+     # returns (int, hex, str, str, [int, int, int], str)
+     data5 = "0x00000000000000000000000000000000000000000000000000000000000000ff000000000000000000000000ca35b7d915458ef540ade6068dfe2f44e8fa733c3132333435363738390000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000221000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000008d0b7d0b0d0b7d0b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000022154686520536f6c6964697479206f7074696d697a6572206f70657261746573206f6e20617373656d626c792c20736f2069742063616e20626520616e6420616c736f2069732075736564206279206f74686572206c616e6775616765732e2049742073706c697473207468652073657175656e6365206f6620696e737472756374696f6e7320696e746f20626173696320626c6f636b73206174204a554d507320616e64204a554d5044455354732e20496e7369646520746865736520626c6f636b732c2074686520696e737472756374696f6e732061726520616e616c7973656420616e64206576657279206d6f64696669636174696f6e20746f2074686520737461636b2c20746f206d656d6f7279206f722073746f72616765206973207265636f7264656420617320616e2065787072657373696f6e20776869636820636f6e7369737473206f6620616e20696e737472756374696f6e20616e642061206c697374206f6620617267756d656e74732077686963682061726520657373656e7469616c6c7920706f696e7465727320746f206f746865722065787072657373696f6e732e20546865206d61696e2069646561206973206e6f7720746f2066696e642065787072657373696f6e7320746861742061726520616c7761797320657175616c20286f6e20657665727920696e7075742920616e6420636f6d62696e65207468656d20696e746f20616e2065787072657373696f6e20636c61737300000000000000000000000000000000000000000000000000000000000000"
+     # returns (int, bytes, str, [int, int, int], str)
+     data6 = "0x00000000000000000000000000000000000000000000000000000000000000ff313233343536373839000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000e0ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000000008d0b7d0b0d0b7d0b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000548656c6c6f000000000000000000000000000000000000000000000000000000"
+     # returns (int, bytes, [int, int, int], str):
+     data7 = "0x00000000000000000000000000000000000000000000000000000000000000ff3132333435363738390000000000000000000000000000000000000000000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff0000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000c0000000000000000000000000000000000000000000000000000000000000000548656c6c6f000000000000000000000000000000000000000000000000000000"
+     # returns (float, float)
+     data8 = "0x00000000000000000000000000000008920000000000000000000000000000000000000000000000000000000000000823000000000000000000000000000000"
+     # returns (int, hex, str, str, [int, int, int], str)
+     data9 = "0x00000000000000000000000000000000000000000000000000000000000000ff000000000000000000000000ca35b7d915458ef540ade6068dfe2f44e8fa733c3130303030303030000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000008d0b7d0b0d0b7d0b0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000548656c6c6f000000000000000000000000000000000000000000000000000000"
+     for line in decodeData(data4):#, types=(int, hex, str, str, [int, int, int], str)):
+         print(line)
+     print(toHex("заза"))
+     print(toHex(u"заза"))
+     #print decodeData(data6)
+     #print strToPaddedHex(u"заза")
+     #print getData([u"Hello"], data="0x1")
+     #print toHex(u"заза")
+     #for line in _breakline(data5[2:], s=64, clean=False):
+         #print line
