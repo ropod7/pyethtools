@@ -1,4 +1,4 @@
-from request import Request, PersonalRequest
-import hextools
+from .request import Request, PersonalRequest, EthConnectionError
+from . import hextools
 
-__all__ = [Request, PersonalRequest, hextools]
+__all__ = [Request, PersonalRequest, EthConnectionError, hextools]
