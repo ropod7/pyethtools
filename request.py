@@ -303,7 +303,11 @@ class Request(BaseRequest):
         See 'eth_call' parameters, expect that all properties are optional."""
         assert isinstance(data, dict), "Given Data must be a type of dict"
         method = sys._getframe().f_code.co_name
-        return int(self.eth_call(data, method=method, block=None), 0)
+        result = self.eth_call(data, method=method, block=None)
+        try:
+            return int(result, 0)
+        except ValueError:
+            return result
 
     def eth_getBlockByHash(self, blockhash, fulltx=False):
         """Returns information about a block by hash.
