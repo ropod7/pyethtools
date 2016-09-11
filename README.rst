@@ -30,7 +30,7 @@ Example of usage:
     hexstr = ht.toHex(method)
     print hexstr
     # 0x7465737443616c6c2875696e742c75696e7433325b5d2c627974657331302c737472696e6729
-    signature = r.web3_sha3(method)
+    signature = r.web3_sha3(hexstr)
     print signature
     # 0x96081302811f55aff14451d09c81b2a499b71fd6387d5480bb6b5afa56f0e663
     txData = ht.getMethodID(signature) # 0x96081302 is methodID
