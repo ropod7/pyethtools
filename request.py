@@ -68,7 +68,8 @@ class PersonalRequest(BaseRequest):
         2. String, - account password"""
         method = sys._getframe().f_code.co_name
         data = self._setData(method, [address, password])
-        return self._setRequest(data)
+        unlocked = self._setRequest(data)
+        return False if isinstance(unlocked, str) else unlocked
 
     def personal_lockAccount(self, address):
         """Lock given account. Returns True, or False.
