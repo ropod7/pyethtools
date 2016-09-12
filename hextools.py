@@ -216,9 +216,10 @@ def decodeArgData(data, types=()):
         - Python float is a Soliditys fixed128x128 (returns in hex format)."""
     _assertNotString(data)
     assert data is not None or _checkForHex(data), _exc
-    assert isinstance(types, tuple), "Types must be a sequence of list"
+    assert isinstance(types, tuple), "Types must be a sequence of tuple"
     assert types, "Zero length of types"
     assert dict not in types, "Unsupported type of dict"
+    assert tuple not in types, "Unsupported type of tuple"
     assert not (len(data)-2) % 64, "Unknown length of Hexnumber"
     if data == u"0x": return [hex(0)]
     def _typeMapper(line):
@@ -255,13 +256,13 @@ def decodeArgData(data, types=()):
         if not types:
             decoded.append("".join(_breakline(hexline)))
         elif types[i] is list:
-            raise TypeError("list must be a list of types, not a type")
+            raise TypeError("list must be a list of types, not a type of list")
         elif types[i] is int:
             decoded.append([types[i], hexline])
         elif types[i] is float:
             decoded.append([types[i], hexline[2:]])
         elif isstring and hexline[2:4] == u"00":
-            strpos = int(hexline, 0) / 32 + 1
+            strpos = int(hexline, 0) // 32 + 1
             strlen = int("0x" + lines[strpos-1], 0) * 2
             strpos = strpos * 64
             listobj = [types[i], "0x" + data[strpos:strpos+strlen]]
@@ -337,7 +338,7 @@ def decodeData(data):
         elif not zerotail and not zerohead:
             strline = l + strline
         # check for line that contains length of string
-        elif zerohead and int(hexline, 0) == len(strline)/2 and strline:
+        elif zerohead and int(hexline, 0) == len(strline)//2 and strline:
             decoded.append(("0x" + strline,))
             strline = ""
             linepos.insert(0, float(i))
