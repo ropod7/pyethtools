@@ -78,6 +78,7 @@ def strToPaddedHex(data):
             tail = 64 - remain
             counter = chlen + tail
         else:
+            tail = 0
             counter = chlen
     else:
         tail = 64 - chlen
