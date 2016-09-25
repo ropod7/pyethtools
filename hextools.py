@@ -103,9 +103,10 @@ def toHex(data):
     If its a BigNumber it will make it the HEX value of a number."""
     def _mapper(symbol):
         try:
-            return hex(ord(symbol))[2:]
-        except TypeError:
-            return hex(symbol)[2:]
+            symbol = ord(symbol)
+        except TypeError: pass
+        hexed = hex(symbol)[2:]
+        return hexed if symbol > 15 else '0' + hexed
     isstring = _isstring(data)
     if isstring:
         if _checkForHex(data):
