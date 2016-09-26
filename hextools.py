@@ -44,7 +44,12 @@ def _checkForHex(data):
             longn = isinstance(int(data, 0), long)
         except NameError:
             longn = False
-        return longn if longn else isinstance(int(data, 0), int)
+        if longn:
+            return longn
+        intn = isinstance(int(data, 0), int)
+        if intn and data[0] in [' ', '+', '-', chr(160), chr(133)]:
+            return False
+        return intn
     except ValueError:
         return False
 
@@ -71,6 +76,7 @@ def strToPaddedHex(data):
             hexed = toHex(unicode(data).encode("utf8"))
     else:
         hexed = toHex(data.encode("utf8"))
+        hexed = toHex(data) if isinstance(hexed, bytes) else hexed
     chlen = len(hexed[2:])
     if chlen > 64:
         remain = chlen % 64
