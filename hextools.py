@@ -37,19 +37,14 @@ def _isstring(data):
 
 def _checkForHex(data):
     _assertNotString(data)
-    if data.isdigit():
+    if data.isdigit() or data[:2] != '0x':
         return False
     try:
         try:
             longn = isinstance(int(data, 0), long)
         except NameError:
             longn = False
-        if longn:
-            return longn
-        intn = isinstance(int(data, 0), int)
-        if intn and data[0] in [' ', '+', '-', chr(160), chr(133)]:
-            return False
-        return intn
+        return longn if longn else isinstance(int(data, 0), int)
     except ValueError:
         return False
 
