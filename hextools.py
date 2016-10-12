@@ -36,7 +36,8 @@ def _isstring(data):
         return isinstance(data, str) or isinstance(data, bytes)
 
 def _checkForHex(data):
-    _assertNotString(data)
+    if not _isstring(data):
+        return False
     if data.isdigit() or data[:2] != '0x':
         return False
     try:
