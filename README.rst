@@ -43,7 +43,11 @@ Example of usage:
             "from" : account,
             "to"   : contractAddress,
             "gas"  : 10**6,
+<<<<<<< HEAD
             # NB: On the giving list of parameters make sure that the additional
+=======
+            # NB: On the giving list of parameters make sure that the additional
+>>>>>>> 89ea6204c1de42d8277bce0b5d4bae558257164d
             # sequence of list is equals to a contract constructor, or function
             # call arguments for the required encoding, because 'getData' is not
             # a compiler.
