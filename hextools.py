@@ -155,10 +155,10 @@ def getMethodID(signature):
 def getData(params, data=None):
     """Returns fully encoded data with additional parameters that given on
     contract creation OR function calling.
-    NB: On giving a list of parameters make shore that the additional
-    # sequence of list is equals to a contract constructor or function
-    # call arguments for the required encoding, because 'getData' is not
-    # a compiler.
+    NB: On giving a list of parameters make sure that the additional
+    sequence of list is equals to a contract constructor or function
+    call arguments for the required encoding, because 'getData' is not
+    a compiler.
     Parameters:
     1. Array - array of parameters.
         - Strings - dynamic argument.
