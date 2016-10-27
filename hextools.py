@@ -207,7 +207,7 @@ def getData(params, data=None):
 def decodeArgData(data, types=()):
     """Returns list of fully decoded Data received from active
     contract on blockchain.
-    To decode data make shore that the given list of types have the same
+    To decode data make sure that the given list of types have the same
     sequence as contract returns, otherwise function returns exception.
     To decode automatically simple results see 'decodeData'.
     Parameters:
