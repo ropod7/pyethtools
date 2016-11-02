@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #!/usr/bin/env/python
+=======
+#!/usr/bin/env/python3
+>>>>>>> db8248d36061c4f8db7118a674d64dc7f2278b37
 # -*- coding: utf8 -*-
 import sys
 from binascii import unhexlify
