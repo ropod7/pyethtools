@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #!/usr/bin/env python
+=======
+#!/usr/bin/env python3
+>>>>>>> 365ba4a5a8073a83d5aa23d0837bdea6f0dc27d5
 # -*- coding: utf8 -*-
 import sys
 import pycurl, json
