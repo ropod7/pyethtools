@@ -2,7 +2,7 @@
 import sys
 import pycurl, json
 try:
-    # Python 3
+    # Python3
     from io import BytesIO
 except ImportError:
     # Python 2
